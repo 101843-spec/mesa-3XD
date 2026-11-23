@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mesa Electrónica 3D - Especificaciones de Presentación</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #07080a;
+      color: #f1f5f9;
+      user-select: none;
+    }
+
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+
+    .glass-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 20px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+    }
+
+    #ui-container {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 10;
+    }
+
+    .btn {
+      color: #f8fafc;
+      padding: 14px 22px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      background: rgba(30, 41, 59, 0.5);
+    }
+
+    .btn:hover {
+      background: rgba(51, 65, 85, 0.8);
+      border-color: rgba(255, 255, 255, 0.4);
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px -5px rgba(0, 0, 0, 0.6);
+    }
+
+    .btn-xray {
+      border-color: rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+    }
+
+    .btn-xray.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.5);
+    }
+
+    .btn-earthquake {
+      border-color: rgba(244, 63, 94, 0.4);
+      color: #fb7185;
+    }
+
+    .btn-earthquake.active {
+      background: #e11d48;
+      color: #ffffff;
+      animation: pulse 1.2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0.6); }
+      70% { box-shadow: 0 0 0 16px rgba(225, 29, 72, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(225, 29, 72, 0); }
+    }
+
+    #materials-panel {
+      position: absolute;
+      top: 24px;
+      right: 24px;
+      padding: 24px;
+      z-index: 10;
+      width: 365px;
+    }
+
+    #materials-panel h3 {
+      margin: 0 0 16px 0;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #38bdf8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .dimensions-box {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+    }
+
+    .dim-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .dim-val {
+      font-size: 15px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    .dim-lbl {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .mat-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .mat-color-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 3px;
+      box-shadow: 0 0 12px currentColor;
+    }
+
+    .mat-label strong {
+      color: #f1f5f9;
+      font-weight: 600;
+    }
+
+    .rgb-corner-badge {
+      background: linear-gradient(135deg, #6366f1, #a855f7, #ec4899);
+      color: white;
+      font-weight: 700;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 10px;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      display: inline-block;
+      box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+    }
+
+    #info-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      font-size: 12px;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+      pointer-events: none;
+    }
+  </style>
+
+  <!-- Three.js y OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- Controles -->
+  <div id="ui-container">
+    <button id="toggle-xray-btn" class="btn btn-xray glass-card">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      <span id="xray-btn-text">Ver Ruta de Cables (Modo Rayos X)</span>
+    </button>
+    <button id="earthquake-btn" class="btn btn-earthquake glass-card">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+      <span>Simular Sismo</span>
+    </button>
+  </div>
+
+  <!-- Panel Informativo con Medidas y Materiales Exactos -->
+  <div id="materials-panel" class="glass-card">
+    <h3>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+      Ficha Técnica & Materiales
+    </h3>
+
+    <!-- Medidas Oficiales de la Presentación -->
+    <div class="dimensions-box">
+      <div class="dim-item">
+        <span class="dim-val">150 cm</span>
+        <span class="dim-lbl">Ancho</span>
+      </div>
+      <div class="dim-item">
+        <span class="dim-val">70 cm</span>
+        <span class="dim-lbl">Profundidad</span>
+      </div>
+      <div class="dim-item">
+        <span class="dim-val">75 cm</span>
+        <span class="dim-lbl">Altura</span>
+      </div>
+    </div>
+
+    <div class="mat-item">
+      <div class="mat-color-dot" style="background: #9c6644; color: #9c6644;"></div>
+      <div class="mat-label"><strong>Cubierta MDF Melamínico (18 mm):</strong> Tablero resistente con esquinas redondeadas y acabado madera cálida.</div>
+    </div>
+
+    <div class="mat-item">
+      <div class="mat-color-dot" style="background: #334155; color: #334155;"></div>
+      <div class="mat-label"><strong>Estructura Acero PTR:</strong> Patas cuadradas tubulares de acero estructural con canalización interna.</div>
+    </div>
+
+    <div class="mat-item">
+      <div class="mat-color-dot" style="background: #64748b; color: #64748b;"></div>
+      <div class="mat-label"><strong>Bandeja de Lámina Plegada:</strong> Compartimento inferior metálico para libros y espacio vertical para mochila.</div>
+    </div>
+
+    <div class="mat-item">
+      <div class="mat-color-dot" style="background: #38bdf8; color: #38bdf8;"></div>
+      <div class="mat-label"><strong>Kit Electrónico OEM:</strong> Base Qi inalámbrica (izquierda) + Mini Hub USB-C y USB-A (derecha) con teléfono apoyado.</div>
+    </div>
+
+    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: space-between;">
+      <span class="rgb-corner-badge">Cinta LED Neón RGB</span>
+      <span style="font-size: 11px; color: #94a3b8;">Esquina Trasera</span>
+    </div>
+  </div>
+
+  <div id="info-panel" class="glass-card">
+    Arrastra para rotar 360° | Clic derecho para mover | Rueda para zoom
+  </div>
+
+  <div id="canvas-container"></div>
+
+  <script>
+    let scene, camera, renderer, controls;
+    let isXrayActive = false;
+    let isQuakeActive = false;
+    let quakeTime = 0;
+
+    let topMesh, frontRightLeg, storageMeshes = [], legMeshes = [];
+    let mdfMelamineMat, steelPTRMat, foldedSheetMetalMat, leatherMatOriginal;
+    let xrayMdfMat, xraySteelMat, xraySheetMat;
+    let cableGroup;
+
+    let chargingLedMat, usbUsbLedMat;
+    let rgbLightMesh, rgbPointLight;
+
+    const originalCamPos = new THREE.Vector3();
+    const originalTarget = new THREE.Vector3();
+
+    init();
+    animate();
+
+    function init() {
+      const container = document.getElementById('canvas-container');
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x07080a);
+      scene.fog = new THREE.FogExp2(0x07080a, 0.03);
+
+      camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.set(2.6, 2.1, 3.1);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.25;
+      container.appendChild(renderer.domElement);
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 + 0.02;
+      controls.minDistance = 1.0;
+      controls.maxDistance = 6.0;
+      controls.target.set(0, 0.42, 0);
+
+      setupLighting();
+      createStudioEnvironment();
+      createDesk();
+
+      window.addEventListener('resize', onWindowResize);
+      document.getElementById('toggle-xray-btn').addEventListener('click', toggleXrayMode);
+      document.getElementById('earthquake-btn').addEventListener('click', toggleEarthquake);
+    }
+
+    function setupLighting() {
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.45);
+      scene.add(ambientLight);
+
+      const mainLight = new THREE.DirectionalLight(0xfff5ea, 1.4);
+      mainLight.position.set(4.5, 6, 3.5);
+      mainLight.castShadow = true;
+      mainLight.shadow.mapSize.width = 2048;
+      mainLight.shadow.mapSize.height = 2048;
+      mainLight.shadow.bias = -0.00005;
+      scene.add(mainLight);
+
+      const fillLight = new THREE.DirectionalLight(0x38bdf8, 0.5);
+      fillLight.position.set(-4, 3, -2);
+      scene.add(fillLight);
+
+      const rimLight = new THREE.DirectionalLight(0xe2e8f0, 0.6);
+      rimLight.position.set(0, 2.5, -4);
+      scene.add(rimLight);
+    }
+
+    function createStudioEnvironment() {
+      const floorGeo = new THREE.PlaneGeometry(14, 14);
+      const floorMat = new THREE.MeshStandardMaterial({ 
+        color: 0x0f1219, 
+        roughness: 0.4, 
+        metalness: 0.3 
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+    }
+
+    function createRoundedTopGeometry(width, height, depth, radius, smoothness) {
+      const shape = new THREE.Shape();
+      const x = -width / 2;
+      const z = -depth / 2;
+      const w = width;
+      const d = depth;
+
+      shape.moveTo(x + radius, z);
+      shape.lineTo(x + w - radius, z);
+      shape.quadraticCurveTo(x + w, z, x + w, z + radius);
+      shape.lineTo(x + w, z + d - radius);
+      shape.quadraticCurveTo(x + w, z + d, x + w - radius, z + d);
+      shape.lineTo(x + radius, z + d);
+      shape.quadraticCurveTo(x, z + d, x, z + d - radius);
+      shape.lineTo(x, z + radius);
+      shape.quadraticCurveTo(x, z, x + radius, z);
+
+      const extrudeSettings = {
+        steps: 1,
+        depth: height,
+        bevelEnabled: true,
+        bevelThickness: 0.003,
+        bevelSize: 0.003,
+        bevelOffset: 0,
+        bevelSegments: smoothness
+      };
+
+      const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+      geo.rotateX(Math.PI / 2);
+      return geo;
+    }
+
+    function createDesk() {
+      const deskGroup = new THREE.Group();
+
+      // --- MATERIALES DE LA PRESENTACIÓN ---
+      // 1. MDF Melamínico (18 mm) - Acabado madera moderno texturizado
+      mdfMelamineMat = new THREE.MeshStandardMaterial({ 
+        color: 0x8d5b4c, // Tono madera melamínica nogal/roble cálido
+        roughness: 0.35,
+        metalness: 0.05
+      });
+
+      // 2. Estructura Acero PTR - Acero negro mate / grafito industrial
+      steelPTRMat = new THREE.MeshStandardMaterial({ 
+        color: 0x1e242b, 
+        metalness: 0.85, 
+        roughness: 0.3 
+      });
+
+      // 3. Bandeja de Lámina Plegada - Acero galvanizado / pintura electrostática gris oscuro
+      foldedSheetMetalMat = new THREE.MeshStandardMaterial({ 
+        color: 0x333c47, 
+        roughness: 0.4,
+        metalness: 0.75
+      });
+
+      leatherMatOriginal = new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.7
+      });
+
+      // Materiales Modo Rayos X
+      xrayMdfMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, transparent: true, opacity: 0.2, roughness: 0.1 });
+      xraySteelMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, transparent: true, opacity: 0.2, metalness: 0.9 });
+      xraySheetMat = new THREE.MeshStandardMaterial({ color: 0x0369a1, transparent: true, opacity: 0.2, roughness: 0.1 });
+
+      // --- MEDIDAS EXACTAS DE LA PRESENTACIÓN ---
+      const tableWidth = 1.50;    // 150 cm de ancho
+      const tableDepth = 0.70;    // 70 cm de profundidad
+      const tableHeight = 0.75;   // 75 cm de altura
+      const topThickness = 0.018; // 18 mm (0.018 m) de grosor MDF Melamínico
+      const ptrSize = 0.04;       // Perfil cuadrado PTR de 4x4 cm (1.5 pulgadas)
+
+      // 1. CUBIERTA MDF MELAMÍNICO (18 mm) CON ESQUINAS CURVAS
+      const topGeo = createRoundedTopGeometry(tableWidth, topThickness, tableDepth, 0.07, 12);
+      topMesh = new THREE.Mesh(topGeo, mdfMelamineMat);
+      topMesh.position.y = tableHeight - topThickness / 2;
+      topMesh.castShadow = true;
+      topMesh.receiveShadow = true;
+      deskGroup.add(topMesh);
+
+      // Bastidor perimetral superior de Acero PTR bajo el tablero
+      const frameBarHeight = 0.03;
+      const frameFront = new THREE.Mesh(new THREE.BoxGeometry(tableWidth - 0.12, frameBarHeight, 0.03), steelPTRMat);
+      frameFront.position.set(0, tableHeight - topThickness - frameBarHeight / 2, tableDepth / 2 - 0.06);
+      const frameBack = new THREE.Mesh(new THREE.BoxGeometry(tableWidth - 0.12, frameBarHeight, 0.03), steelPTRMat);
+      frameBack.position.set(0, tableHeight - topThickness - frameBarHeight / 2, -(tableDepth / 2 - 0.06));
+      deskGroup.add(frameFront, frameBack);
+
+      // 2. CINTA NEÓN RGB TRASERA
+      createRGBCorner(deskGroup, tableWidth, tableDepth, tableHeight, topThickness);
+
+      // 3. BANDEJA DE LÁMINA PLEGADA Y COMPARTIMENTO MOCHILA
+      const sheetThickness = 0.004; // Lámina metálica plegada
+      const cubicleDepth = tableDepth - 0.12;
+      const underTopY = tableHeight - topThickness - frameBarHeight;
+
+      // Compartimento Vertical Mochila (Derecha) en Lámina Plegada
+      const bagWidth = 0.38;
+      const bagHeight = 0.50; 
+      const bagX = (tableWidth / 2) - (bagWidth / 2) - 0.07;
+      const bagCenterY = underTopY - (bagHeight / 2);
+
+      const bagRightWall = new THREE.Mesh(new THREE.BoxGeometry(sheetThickness, bagHeight, cubicleDepth), foldedSheetMetalMat);
+      bagRightWall.position.set(bagX + bagWidth / 2 - sheetThickness / 2, bagCenterY, 0);
+
+      const bagMiddleWall = new THREE.Mesh(new THREE.BoxGeometry(sheetThickness, bagHeight, cubicleDepth), foldedSheetMetalMat);
+      bagMiddleWall.position.set(bagX - bagWidth / 2 + sheetThickness / 2, bagCenterY, 0);
+
+      const bagBottomWall = new THREE.Mesh(new THREE.BoxGeometry(bagWidth, sheetThickness, cubicleDepth), foldedSheetMetalMat);
+      bagBottomWall.position.set(bagX, bagCenterY - bagHeight / 2 + sheetThickness / 2, 0);
+
+      const bagBackWall = new THREE.Mesh(new THREE.BoxGeometry(bagWidth, bagHeight, sheetThickness), foldedSheetMetalMat);
+      bagBackWall.position.set(bagX, bagCenterY, -cubicleDepth / 2 + sheetThickness / 2);
+
+      // Bandeja Horizontal de Lámina Plegada para Libros y Cuadernos (Izquierda)
+      const leftEdgeX = -(tableWidth / 2) + 0.07; 
+      const rightEdgeX = bagX - (bagWidth / 2);    
+      const bookWidth = rightEdgeX - leftEdgeX;
+      const bookHeight = 0.17;                     
+      const bookX = leftEdgeX + (bookWidth / 2);
+      const bookCenterY = underTopY - (bookHeight / 2);
+
+      const bookLeftWall = new THREE.Mesh(new THREE.BoxGeometry(sheetThickness, bookHeight, cubicleDepth), foldedSheetMetalMat);
+      bookLeftWall.position.set(bookX - bookWidth / 2 + sheetThickness / 2, bookCenterY, 0);
+
+      const bookBottomWall = new THREE.Mesh(new THREE.BoxGeometry(bookWidth, sheetThickness, cubicleDepth), foldedSheetMetalMat);
+      bookBottomWall.position.set(bookX, bookCenterY - bookHeight / 2 + sheetThickness / 2, 0);
+
+      const bookBackWall = new THREE.Mesh(new THREE.BoxGeometry(bookWidth, bookHeight, sheetThickness), foldedSheetMetalMat);
+      bookBackWall.position.set(bookX, bookCenterY, -cubicleDepth / 2 + sheetThickness / 2);
+
+      // Doblez frontal característico de la bandeja de lámina plegada
+      const frontLipGeo = new THREE.BoxGeometry(bookWidth, 0.015, sheetThickness);
+      const frontLip = new THREE.Mesh(frontLipGeo, foldedSheetMetalMat);
+      frontLip.position.set(bookX, bookCenterY - bookHeight / 2 + 0.0075, cubicleDepth / 2);
+
+      storageMeshes = [bagRightWall, bagMiddleWall, bagBottomWall, bagBackWall, bookLeftWall, bookBottomWall, bookBackWall, frontLip];
+      storageMeshes.forEach(part => {
+        part.castShadow = true;
+        part.receiveShadow = true;
+        deskGroup.add(part);
+      });
+
+      // 4. PATAS DE ESTRUCTURA ACERO PTR (PERFIL CUADRADO TUBULAR)
+      const legHeight = tableHeight - topThickness;
+      const legGeo = new THREE.BoxGeometry(ptrSize, legHeight, ptrSize);
+
+      const xPos = tableWidth / 2 - 0.07;
+      const zPos = tableDepth / 2 - 0.07;
+
+      const legPositions = [
+        [-xPos, legHeight / 2, -zPos], 
+        [-xPos, legHeight / 2, zPos],  
+        [xPos, legHeight / 2, -zPos]   
+      ];
+
+      legPositions.forEach(pos => {
+        const leg = new THREE.Mesh(legGeo, steelPTRMat);
+        leg.position.set(...pos);
+        leg.castShadow = true;
+        leg.receiveShadow = true;
+        legMeshes.push(leg);
+        deskGroup.add(leg);
+      });
+
+      // Pata delantera derecha PTR (Canalización interna de cables)
+      frontRightLeg = new THREE.Mesh(legGeo, steelPTRMat);
+      frontRightLeg.position.set(xPos, legHeight / 2, zPos);
+      frontRightLeg.castShadow = true;
+      frontRightLeg.receiveShadow = true;
+      legMeshes.push(frontRightLeg);
+      deskGroup.add(frontRightLeg);
+
+      // Travesaños laterales inferiores de refuerzo PTR
+      const sideBarGeo = new THREE.BoxGeometry(0.03, 0.03, tableDepth - 0.14);
+      const leftBar = new THREE.Mesh(sideBarGeo, steelPTRMat);
+      leftBar.position.set(-xPos, 0.12, 0);
+      const rightBar = new THREE.Mesh(sideBarGeo, steelPTRMat);
+      rightBar.position.set(xPos, 0.12, 0);
+      deskGroup.add(leftBar, rightBar);
+
+      // 5. CABLES INTERNOS OCULTOS EN EL PTR
+      createInternalCableSystem(deskGroup, xPos, zPos, legHeight, tableHeight);
+
+      // 6. SETUP MONITOR Y ACCESORIOS INALÁMBRICOS
+      createCurvedComputerSetup(deskGroup, tableHeight);
+
+      // 7. KIT ELECTRÓNICO OEM (Base Qi + Mini Hub USB-A/C con celular al lado)
+      createWirelessPowerBankPad(deskGroup, tableHeight, tableWidth);
+      createMiniCompactUSBHubSidePhone(deskGroup, tableHeight, tableWidth);
+
+      // 8. OBJETOS EN BANDEJA DE LÁMINA PLEGADA
+      createStorageItems(
+        deskGroup, 
+        bookX, 
+        bookCenterY - bookHeight / 2 + sheetThickness, 
+        bagX, 
+        bagCenterY - bagHeight / 2 + sheetThickness   
+      );
+
+      scene.add(deskGroup);
+    }
+
+    function createRGBCorner(deskGroup, tableWidth, tableDepth, tableHeight, topThickness) {
+      const cornerX = -(tableWidth / 2) + 0.08;
+      const cornerZ = -(tableDepth / 2) + 0.08;
+      const cornerY = tableHeight - topThickness / 2;
+
+      const rgbGeo = new THREE.BoxGeometry(0.14, topThickness + 0.002, 0.14);
+      const rgbMat = new THREE.MeshStandardMaterial({ 
+        color: 0xa855f7, 
+        emissive: 0xa855f7, 
+        emissiveIntensity: 1.0,
+        roughness: 0.1
+      });
+
+      rgbLightMesh = new THREE.Mesh(rgbGeo, rgbMat);
+      rgbLightMesh.position.set(cornerX, cornerY, cornerZ);
+      deskGroup.add(rgbLightMesh);
+
+      rgbPointLight = new THREE.PointLight(0xa855f7, 0.8, 1.2);
+      rgbPointLight.position.set(cornerX, cornerY + 0.06, cornerZ);
+      deskGroup.add(rgbPointLight);
+    }
+
+    function createMiniCompactUSBHubSidePhone(deskGroup, tableHeight, tableWidth) {
+      const hubGroup = new THREE.Group();
+      
+      // Ubicación en el lado derecho (ajustada al nuevo ancho de 150 cm)
+      const hubX = (tableWidth / 2) - 0.14;
+      const hubZ = 0.12;
+      hubGroup.position.set(hubX, tableHeight, hubZ);
+
+      const miniWidth = 0.075;
+      const miniDepth = 0.050;
+      const miniHeight = 0.0025;
+
+      const plateMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.25 });
+      const innerMat = new THREE.MeshStandardMaterial({ color: 0x090a0f, roughness: 0.3 });
+
+      const plateGeo = new THREE.BoxGeometry(miniWidth, miniHeight, miniDepth);
+      const plateMesh = new THREE.Mesh(plateGeo, plateMat);
+      plateMesh.position.y = miniHeight / 2;
+      plateMesh.castShadow = true;
+      plateMesh.receiveShadow = true;
+      hubGroup.add(plateMesh);
+
+      const cavityGeo = new THREE.BoxGeometry(miniWidth - 0.008, 0.001, miniDepth - 0.008);
+      const cavity = new THREE.Mesh(cavityGeo, innerMat);
+      cavity.position.y = miniHeight + 0.0001;
+      hubGroup.add(cavity);
+
+      // Puerto USB Type-C
+      const portCFrameGeo = new THREE.BoxGeometry(0.014, 0.0015, 0.007);
+      const portCFrame = new THREE.Mesh(portCFrameGeo, innerMat);
+      portCFrame.position.set(-0.020, miniHeight + 0.0004, 0);
+      hubGroup.add(portCFrame);
+
+      const slotCGeo = new THREE.BoxGeometry(0.010, 0.001, 0.004);
+      usbUsbLedMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.9 });
+      const slotC = new THREE.Mesh(slotCGeo, usbUsbLedMat);
+      slotC.position.set(-0.020, miniHeight + 0.0008, 0);
+      hubGroup.add(slotC);
+
+      // Puerto USB Type-A
+      const portAFrameGeo = new THREE.BoxGeometry(0.018, 0.0015, 0.010);
+      const portAFrame = new THREE.Mesh(portAFrameGeo, innerMat);
+      portAFrame.position.set(0.018, miniHeight + 0.0004, 0);
+      hubGroup.add(portAFrame);
+
+      const slotAGeo = new THREE.BoxGeometry(0.014, 0.001, 0.007);
+      const slotAMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4 });
+      const slotA = new THREE.Mesh(slotAGeo, slotAMat);
+      slotA.position.set(0.018, miniHeight + 0.0008, 0);
+      hubGroup.add(slotA);
+
+      // Conector Type-C enchufado
+      const plugHeadGeo = new THREE.BoxGeometry(0.012, 0.004, 0.016);
+      const plugHeadMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.2, roughness: 0.3 });
+      const plugHead = new THREE.Mesh(plugHeadGeo, plugHeadMat);
+      plugHead.position.set(-0.020, miniHeight + 0.002, 0.010);
+      plugHead.castShadow = true;
+      hubGroup.add(plugHead);
+
+      // Cable plano hacia el celular a un lado
+      const cableCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.020, miniHeight + 0.002, 0.018),
+        new THREE.Vector3(-0.045, miniHeight + 0.0015, 0.040),
+        new THREE.Vector3(-0.085, miniHeight + 0.0015, 0.060),
+        new THREE.Vector3(-0.120, miniHeight + 0.0015, 0.060)
+      ]);
+      const cableGeo = new THREE.TubeGeometry(cableCurve, 20, 0.0018, 8, false);
+      const cableMesh = new THREE.Mesh(cableGeo, plugHeadMat);
+      cableMesh.castShadow = true;
+      hubGroup.add(cableMesh);
+
+      // Smartphone asentado directamente sobre la cubierta de MDF melamínico
+      const phoneGroup = new THREE.Group();
+      phoneGroup.position.set(-0.175, 0.004, 0.060);
+
+      const phoneBodyGeo = new THREE.BoxGeometry(0.072, 0.008, 0.146);
+      const phoneBodyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.85, roughness: 0.15 });
+      const phoneBody = new THREE.Mesh(phoneBodyGeo, phoneBodyMat);
+      phoneBody.castShadow = true;
+      phoneBody.receiveShadow = true;
+      phoneGroup.add(phoneBody);
+
+      const phoneScreenGeo = new THREE.PlaneGeometry(0.068, 0.140);
+      const phoneScreenMat = new THREE.MeshStandardMaterial({ 
+        color: 0x0284c7, 
+        emissive: 0x0369a1, 
+        emissiveIntensity: 0.7,
+        roughness: 0.1 
+      });
+      const phoneScreen = new THREE.Mesh(phoneScreenGeo, phoneScreenMat);
+      phoneScreen.rotation.x = -Math.PI / 2;
+      phoneScreen.position.y = 0.0041;
+      phoneGroup.add(phoneScreen);
+
+      hubGroup.add(phoneGroup);
+      deskGroup.add(hubGroup);
+    }
+
+    function createInternalCableSystem(deskGroup, x, z, legHeight, tableHeight) {
+      cableGroup = new THREE.Group();
+      cableGroup.visible = false;
+
+      const powerCableMat = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xb91c1c, emissiveIntensity: 0.9 }); 
+      const dataCableMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.9 });  
+
+      const powerCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.08, tableHeight - 0.015, -0.18),
+        new THREE.Vector3(x - 0.008, tableHeight - 0.015, z - 0.008),
+        new THREE.Vector3(x - 0.008, legHeight * 0.7, z - 0.008),
+        new THREE.Vector3(x - 0.008, legHeight * 0.3, z - 0.008),
+        new THREE.Vector3(x - 0.04, 0.01, z)
+      ]);
+
+      const powerTubeGeo = new THREE.TubeGeometry(powerCurve, 32, 0.006, 8, false);
+      const powerCable = new THREE.Mesh(powerTubeGeo, powerCableMat);
+      cableGroup.add(powerCable);
+
+      const dataCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.04, tableHeight - 0.015, -0.18),
+        new THREE.Vector3(x + 0.008, tableHeight - 0.015, z + 0.008),
+        new THREE.Vector3(x + 0.008, legHeight * 0.6, z + 0.008),
+        new THREE.Vector3(x + 0.008, legHeight * 0.2, z + 0.008),
+        new THREE.Vector3(x + 0.04, 0.01, z + 0.02)
+      ]);
+
+      const dataTubeGeo = new THREE.TubeGeometry(dataCurve, 32, 0.004, 8, false);
+      const dataCable = new THREE.Mesh(dataTubeGeo, dataCableMat);
+      cableGroup.add(dataCable);
+
+      deskGroup.add(cableGroup);
+    }
+
+    function createCurvedComputerSetup(deskGroup, tableHeight) {
+      const compGroup = new THREE.Group();
+      compGroup.position.set(-0.08, tableHeight, -0.05);
+
+      const steelMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.2 });
+      const darkGlassMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.05 });
+      const screenOnMat = new THREE.MeshStandardMaterial({ 
+        color: 0x020617, 
+        emissive: 0x0369a1, 
+        emissiveIntensity: 0.65, 
+        roughness: 0.1 
+      });
+
+      const baseGeo = new THREE.CylinderGeometry(0.095, 0.095, 0.006, 32);
+      const base = new THREE.Mesh(baseGeo, steelMat);
+      base.position.set(0, 0.003, -0.1);
+      base.castShadow = true;
+      compGroup.add(base);
+
+      const standGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.22, 16);
+      const stand = new THREE.Mesh(standGeo, steelMat);
+      stand.position.set(0, 0.11, -0.14);
+      stand.castShadow = true;
+      compGroup.add(stand);
+
+      const monitorGeo = new THREE.BoxGeometry(0.64, 0.34, 0.01);
+      const monitor = new THREE.Mesh(monitorGeo, darkGlassMat);
+      monitor.position.set(0, 0.25, -0.135);
+      monitor.castShadow = true;
+      compGroup.add(monitor);
+
+      const displayGeo = new THREE.PlaneGeometry(0.62, 0.32);
+      const display = new THREE.Mesh(displayGeo, screenOnMat);
+      display.position.set(0, 0.25, -0.129);
+      compGroup.add(display);
+
+      const kbMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.6 });
+      const kbGeo = new THREE.BoxGeometry(0.36, 0.01, 0.12);
+      const keyboard = new THREE.Mesh(kbGeo, kbMat);
+      keyboard.position.set(-0.02, 0.005, 0.12);
+      keyboard.castShadow = true;
+      compGroup.add(keyboard);
+
+      const padGeo = new THREE.BoxGeometry(0.22, 0.002, 0.24);
+      const pad = new THREE.Mesh(padGeo, leatherMatOriginal);
+      pad.position.set(0.29, 0.001, 0.12);
+      pad.receiveShadow = true;
+      compGroup.add(pad);
+
+      const mouseGeo = new THREE.BoxGeometry(0.052, 0.024, 0.095);
+      const mouseMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.2, metalness: 0.7 });
+      const mouse = new THREE.Mesh(mouseGeo, mouseMat);
+      mouse.position.set(0.29, 0.012, 0.12);
+      mouse.rotation.y = -0.08;
+      mouse.castShadow = true;
+      compGroup.add(mouse);
+
+      deskGroup.add(compGroup);
+    }
+
+    function createWirelessPowerBankPad(deskGroup, tableHeight, tableWidth) {
+      const chargerGroup = new THREE.Group();
+      chargerGroup.position.set(-(tableWidth / 2) + 0.18, tableHeight, 0.12);
+
+      const ringGeo = new THREE.CylinderGeometry(0.058, 0.058, 0.002, 32);
+      const ringMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.2 });
+      const chargerBase = new THREE.Mesh(ringGeo, ringMat);
+      chargerBase.position.y = 0.001;
+      chargerBase.receiveShadow = true;
+      chargerGroup.add(chargerBase);
+
+      const ledGeo = new THREE.RingGeometry(0.042, 0.05, 32);
+      chargingLedMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide });
+      const ledRing = new THREE.Mesh(ledGeo, chargingLedMat);
+      ledRing.rotation.x = -Math.PI / 2;
+      ledRing.position.y = 0.0021;
+      chargerGroup.add(ledRing);
+
+      const phoneGroup = new THREE.Group();
+      phoneGroup.position.set(0, 0.002, 0);
+
+      const bodyGeo = new THREE.BoxGeometry(0.072, 0.0075, 0.145);
+      const bodyMat = new THREE.MeshStandardMaterial({ color: 0x020617, metalness: 0.95, roughness: 0.1 });
+      const phoneBody = new THREE.Mesh(bodyGeo, bodyMat);
+      phoneBody.position.y = 0.00375;
+      phoneBody.castShadow = true;
+      phoneGroup.add(phoneBody);
+
+      const screenGeo = new THREE.PlaneGeometry(0.068, 0.138);
+      const phoneScreenMat = new THREE.MeshStandardMaterial({ 
+        color: 0x022c22, 
+        emissive: 0x059669, 
+        emissiveIntensity: 0.55,
+        roughness: 0.1 
+      });
+      const phoneScreen = new THREE.Mesh(screenGeo, phoneScreenMat);
+      phoneScreen.rotation.x = -Math.PI / 2;
+      phoneScreen.position.y = 0.0076;
+      phoneGroup.add(phoneScreen);
+
+      chargerGroup.add(phoneGroup);
+      deskGroup.add(chargerGroup);
+    }
+
+    function createStorageItems(deskGroup, bookX, bookFloorY, bagX, bagFloorY) {
+      const contentsGroup = new THREE.Group();
+
+      const backpackGroup = new THREE.Group();
+      const bagMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6, metalness: 0.2 }); 
+
+      const bodyGeo = new THREE.BoxGeometry(0.24, 0.42, 0.17);
+      const body = new THREE.Mesh(bodyGeo, bagMat);
+      body.castShadow = true;
+      backpackGroup.add(body);
+
+      backpackGroup.position.set(bagX, bagFloorY + 0.21, 0);
+      contentsGroup.add(backpackGroup);
+
+      const notebookColors = [0x0369a1, 0x334155, 0x0f172a];
+      let currentY = bookFloorY + 0.01;
+
+      for (let i = 0; i < 3; i++) {
+        const nbMat = new THREE.MeshStandardMaterial({ color: notebookColors[i], roughness: 0.4 });
+        const nbGeo = new THREE.BoxGeometry(0.32, 0.025, 0.35);
+        const notebook = new THREE.Mesh(nbGeo, nbMat);
+        
+        notebook.position.set(bookX, currentY, 0);
+        notebook.castShadow = true;
+        notebook.receiveShadow = true;
+        
+        contentsGroup.add(notebook);
+        currentY += 0.027;
+      }
+
+      deskGroup.add(contentsGroup);
+    }
+
+    function toggleXrayMode() {
+      isXrayActive = !isXrayActive;
+      const btn = document.getElementById('toggle-xray-btn');
+      const btnText = document.getElementById('xray-btn-text');
+
+      if (isXrayActive) {
+        btn.classList.add('active');
+        btnText.textContent = "Ocultar Ruta de Cables";
+
+        topMesh.material = xrayMdfMat;
+        legMeshes.forEach(mesh => mesh.material = xraySteelMat);
+        storageMeshes.forEach(mesh => mesh.material = xraySheetMat);
+        cableGroup.visible = true;
+      } else {
+        btn.classList.remove('active');
+        btnText.textContent = "Ver Ruta de Cables (Modo Rayos X)";
+
+        topMesh.material = mdfMelamineMat;
+        legMeshes.forEach(mesh => mesh.material = steelPTRMat);
+        storageMeshes.forEach(mesh => mesh.material = foldedSheetMetalMat);
+        cableGroup.visible = false;
+      }
+    }
+
+    function toggleEarthquake() {
+      isQuakeActive = !isQuakeActive;
+      const btn = document.getElementById('earthquake-btn');
+
+      if (isQuakeActive) {
+        btn.classList.add('active');
+        originalCamPos.copy(camera.position);
+        originalTarget.copy(controls.target);
+      } else {
+        btn.classList.remove('active');
+        camera.position.copy(originalCamPos);
+        controls.target.copy(originalTarget);
+      }
+    }
+
+    function onWindowResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const time = Date.now() * 0.0015;
+
+      if (rgbLightMesh && rgbPointLight) {
+        const hue = (time * 0.12) % 1;
+        const color = new THREE.Color().setHSL(hue, 0.85, 0.55);
+        rgbLightMesh.material.color.copy(color);
+        rgbLightMesh.material.emissive.copy(color);
+        rgbPointLight.color.copy(color);
+      }
+
+      if (chargingLedMat) {
+        chargingLedMat.opacity = 0.5 + Math.sin(time * 3) * 0.5;
+      }
+
+      if (usbUsbLedMat) {
+        usbUsbLedMat.emissiveIntensity = 0.5 + Math.cos(time * 2.5) * 0.3;
+      }
+
+      if (isQuakeActive) {
+        quakeTime += 0.35;
+        const intensity = 0.035;
+
+        camera.position.x = originalCamPos.x + (Math.sin(quakeTime * 1.6) * intensity) + (Math.cos(quakeTime * 3.1) * intensity * 0.5);
+        camera.position.y = originalCamPos.y + (Math.cos(quakeTime * 2.2) * intensity);
+        camera.position.z = originalCamPos.z + (Math.sin(quakeTime * 2.7) * intensity);
+
+        controls.target.x = originalTarget.x + (Math.cos(quakeTime * 2.0) * intensity * 0.5);
+        controls.target.y = originalTarget.y + (Math.sin(quakeTime * 2.4) * intensity * 0.5);
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+  </script>
+</body>
+</html>
